@@ -1,26 +1,59 @@
+use wgpu::util::DeviceExt;
 use winit::window::Window;
 use winit::{event::*, event_loop::EventLoop, window::WindowBuilder};
 
-struct State {
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+struct Vertex {
+	position: [f32; 3],
+	color: [f32; 3],
+}
+impl Vertex {
+	const ATTRIBS: [wgpu::VertexAttribute; 2] =
+		wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+
+	const fn new(x: f32, y: f32, z: f32, color: wgpu::Color) -> Vertex {
+		Self {
+			position: [x, y, z],
+			color: [color.r as f32, color.g as f32, color.b as f32],
+		}
+	}
+	const fn desc() -> wgpu::VertexBufferLayout<'static> {
+		wgpu::VertexBufferLayout {
+			array_stride: std::mem::size_of::<Vertex>() as u64,
+			step_mode: wgpu::VertexStepMode::Vertex,
+			attributes: &Self::ATTRIBS,
+		}
+	}
+}
+
+const VERTEX: &[Vertex] = &[
+	Vertex::new(0., 0.5, 0., wgpu::Color::RED),
+	Vertex::new(-0.5, -0.5, 0., wgpu::Color::BLUE),
+	Vertex::new(0.5, -0.5, 0., wgpu::Color::GREEN),
+];
+
+struct State<'a> {
 	surface: wgpu::Surface,
 	device: wgpu::Device,
 	queue: wgpu::Queue,
 	config: wgpu::SurfaceConfiguration,
 	size: winit::dpi::PhysicalSize<u32>,
-	window: Window,
+	window: &'a Window,
 	pipeline: wgpu::RenderPipeline,
+	vertex_buffer: wgpu::Buffer,
 }
 
-impl State {
-	async fn new(window: Window) -> Self {
+impl<'a> State<'a> {
+	async fn new(window: &'a Window) -> State<'a> {
 		let size = window.inner_size();
 		let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
 			backends: wgpu::Backends::all(),
-			flags: wgpu::InstanceFlags::debugging(),
+			flags: wgpu::InstanceFlags::all(),
 			dx12_shader_compiler: wgpu::Dx12Compiler::default(),
 			gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
 		});
-		let surface = unsafe { instance.create_surface(&window).unwrap() };
+		let surface = unsafe { instance.create_surface(window).unwrap() };
 		let adapter = instance
 			.request_adapter(&wgpu::RequestAdapterOptionsBase {
 				power_preference: wgpu::PowerPreference::None,
@@ -29,7 +62,6 @@ impl State {
 			})
 			.await
 			.unwrap();
-		println!("{:?}", adapter.get_info());
 		let (device, queue) = adapter
 			.request_device(
 				&wgpu::DeviceDescriptor {
@@ -69,7 +101,7 @@ impl State {
 			vertex: wgpu::VertexState {
 				module: &shader,
 				entry_point: "vs_main",
-				buffers: &[],
+				buffers: &[Vertex::desc()],
 			},
 			fragment: Some(wgpu::FragmentState {
 				module: &shader,
@@ -97,6 +129,18 @@ impl State {
 			},
 			multiview: None,
 		});
+		let vertex_buffer = unsafe {
+			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+				contents: {
+					std::slice::from_raw_parts(
+						VERTEX.as_ptr() as *const u8,
+						std::mem::size_of_val(VERTEX),
+					)
+				},
+				label: None,
+				usage: wgpu::BufferUsages::VERTEX,
+			})
+		};
 		Self {
 			surface,
 			device,
@@ -105,20 +149,19 @@ impl State {
 			size,
 			window,
 			pipeline,
+			vertex_buffer,
 		}
 	}
 
 	pub fn window(&self) -> &Window {
-		&self.window
+		self.window
 	}
 
 	fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-		if new_size.width > 0 && new_size.height > 0 {
-			self.size = new_size;
-			self.config.width = new_size.width;
-			self.config.height = new_size.height;
-			self.surface.configure(&self.device, &self.config)
-		}
+		self.size = new_size;
+		self.config.width = new_size.width;
+		self.config.height = new_size.height;
+		self.surface.configure(&self.device, &self.config)
 	}
 
 	fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -144,6 +187,7 @@ impl State {
 			occlusion_query_set: None,
 		});
 		render_pass.set_pipeline(&self.pipeline);
+		render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
 		render_pass.draw(0..3, 0..1);
 		drop(render_pass);
 		self.queue.submit(std::iter::once(encoder.finish()));
@@ -158,7 +202,7 @@ async fn main() {
 	let event_loop = EventLoop::new().unwrap();
 	let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-	let mut state = State::new(window).await;
+	let mut state = State::new(&window).await;
 	let _ = event_loop.run(move |event, control_flow| match event {
 		Event::WindowEvent {
 			ref event,
