@@ -43,6 +43,8 @@ const DBG_TEX: &[[u8; 4]] = &[
 	[255, 0, 255, 255],
 ];
 
+const UNIFORM_BUF: &[f32] = &[0.5];
+
 struct State<'a> {
 	surface: wgpu::Surface,
 	device: wgpu::Device,
@@ -53,7 +55,8 @@ struct State<'a> {
 	pipeline: wgpu::RenderPipeline,
 	vertex_buffer: wgpu::Buffer,
 	index_buffer: wgpu::Buffer,
-	bind_group: wgpu::BindGroup,
+	texture_bind_group: wgpu::BindGroup,
+	uniform_bind_group: wgpu::BindGroup,
 }
 
 impl<'a> State<'a> {
@@ -211,9 +214,43 @@ impl<'a> State<'a> {
 				},
 			],
 		});
+		let uniform_buffer = unsafe {
+			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+				contents: {
+					std::slice::from_raw_parts(
+						UNIFORM_BUF.as_ptr() as *const u8,
+						std::mem::size_of_val(INDEX_BUF),
+					)
+				},
+				label: None,
+				usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+			})
+		};
+		let uniform_value_group_layout =
+			device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+				label: None,
+				entries: &[wgpu::BindGroupLayoutEntry {
+					binding: 0,
+					visibility: wgpu::ShaderStages::FRAGMENT,
+					ty: wgpu::BindingType::Buffer {
+						ty: wgpu::BufferBindingType::Uniform,
+						has_dynamic_offset: false,
+						min_binding_size: None,
+					},
+					count: None,
+				}],
+			});
+		let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+			label: None,
+			layout: &uniform_value_group_layout,
+			entries: &[wgpu::BindGroupEntry {
+				binding: 0,
+				resource: uniform_buffer.as_entire_binding(),
+			}],
+		});
 		let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
 			label: None,
-			bind_group_layouts: &[&texture_bind_group_layout],
+			bind_group_layouts: &[&texture_bind_group_layout, &uniform_value_group_layout],
 			push_constant_ranges: &[],
 		});
 		let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -260,7 +297,8 @@ impl<'a> State<'a> {
 			pipeline,
 			vertex_buffer,
 			index_buffer,
-			bind_group: texture_bind_group,
+			texture_bind_group,
+			uniform_bind_group,
 		}
 	}
 
@@ -298,7 +336,8 @@ impl<'a> State<'a> {
 			occlusion_query_set: None,
 		});
 		render_pass.set_pipeline(&self.pipeline);
-		render_pass.set_bind_group(0, &self.bind_group, &[]);
+		render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
+		render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
 		render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
 		render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 		render_pass.draw_indexed(0..(INDEX_BUF.len() as u32), 0, 0..1);
