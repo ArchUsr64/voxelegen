@@ -43,8 +43,6 @@ const DBG_TEX: &[[u8; 4]] = &[
 	[255, 0, 255, 255],
 ];
 
-const UNIFORM_BUF: &[f32] = &[0.5];
-
 struct State<'a> {
 	surface: wgpu::Surface,
 	device: wgpu::Device,
@@ -55,8 +53,10 @@ struct State<'a> {
 	pipeline: wgpu::RenderPipeline,
 	vertex_buffer: wgpu::Buffer,
 	index_buffer: wgpu::Buffer,
+	uniform_buffer: wgpu::Buffer,
 	texture_bind_group: wgpu::BindGroup,
 	uniform_bind_group: wgpu::BindGroup,
+	uniform_value: f32,
 }
 
 impl<'a> State<'a> {
@@ -214,18 +214,12 @@ impl<'a> State<'a> {
 				},
 			],
 		});
-		let uniform_buffer = unsafe {
-			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-				contents: {
-					std::slice::from_raw_parts(
-						UNIFORM_BUF.as_ptr() as *const u8,
-						std::mem::size_of_val(INDEX_BUF),
-					)
-				},
-				label: None,
-				usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-			})
-		};
+		let uniform_value = 0f32;
+		let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+			contents: &uniform_value.to_ne_bytes(),
+			label: None,
+			usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+		});
 		let uniform_value_group_layout =
 			device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
 				label: None,
@@ -297,8 +291,10 @@ impl<'a> State<'a> {
 			pipeline,
 			vertex_buffer,
 			index_buffer,
+			uniform_buffer,
 			texture_bind_group,
 			uniform_bind_group,
+			uniform_value,
 		}
 	}
 
@@ -335,6 +331,8 @@ impl<'a> State<'a> {
 			timestamp_writes: None,
 			occlusion_query_set: None,
 		});
+		self.queue
+			.write_buffer(&self.uniform_buffer, 0, &self.uniform_value.to_ne_bytes());
 		render_pass.set_pipeline(&self.pipeline);
 		render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
 		render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
@@ -344,6 +342,10 @@ impl<'a> State<'a> {
 		drop(render_pass);
 		self.queue.submit(std::iter::once(encoder.finish()));
 		output.present();
+		self.uniform_value += 0.05;
+		if self.uniform_value > 1. {
+			self.uniform_value = 0.
+		}
 		Ok(())
 	}
 }
