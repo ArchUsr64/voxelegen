@@ -29,10 +29,10 @@ impl Vertex {
 }
 
 const VERT_BUF: &[Vertex] = &[
-	Vertex::new(1., 1., 0., 1., 1.),
-	Vertex::new(-1., 1., 0., 0., 1.),
-	Vertex::new(-1., -1., 0., 0., 0.),
-	Vertex::new(1., -1., 0., 1., 0.),
+	Vertex::new(1., 1., 0., 1., 0.),
+	Vertex::new(-1., 1., 0., 0., 0.),
+	Vertex::new(-1., -1., 0., 0., 1.),
+	Vertex::new(1., -1., 0., 1., 1.),
 ];
 
 const INDEX_BUF: &[u16] = &[2, 0, 1, 2, 3, 0];
