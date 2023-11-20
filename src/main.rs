@@ -27,11 +27,14 @@ impl Vertex {
 	}
 }
 
-const VERTEX: &[Vertex] = &[
-	Vertex::new(0., 0.5, 0., wgpu::Color::RED),
-	Vertex::new(-0.5, -0.5, 0., wgpu::Color::BLUE),
-	Vertex::new(0.5, -0.5, 0., wgpu::Color::GREEN),
+const VERT_BUF: &[Vertex] = &[
+	Vertex::new(1., 1., 0., wgpu::Color::RED),
+	Vertex::new(-1., 1., 0., wgpu::Color::GREEN),
+	Vertex::new(-1., -1., 0., wgpu::Color::BLUE),
+	Vertex::new(1., -1., 0., wgpu::Color::BLACK),
 ];
+
+const INDEX_BUF: &[u16] = &[2, 0, 1, 2, 3, 0];
 
 struct State<'a> {
 	surface: wgpu::Surface,
@@ -42,6 +45,7 @@ struct State<'a> {
 	window: &'a Window,
 	pipeline: wgpu::RenderPipeline,
 	vertex_buffer: wgpu::Buffer,
+	index_buffer: wgpu::Buffer,
 }
 
 impl<'a> State<'a> {
@@ -133,12 +137,24 @@ impl<'a> State<'a> {
 			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
 				contents: {
 					std::slice::from_raw_parts(
-						VERTEX.as_ptr() as *const u8,
-						std::mem::size_of_val(VERTEX),
+						VERT_BUF.as_ptr() as *const u8,
+						std::mem::size_of_val(VERT_BUF),
 					)
 				},
 				label: None,
 				usage: wgpu::BufferUsages::VERTEX,
+			})
+		};
+		let index_buffer = unsafe {
+			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+				contents: {
+					std::slice::from_raw_parts(
+						INDEX_BUF.as_ptr() as *const u8,
+						std::mem::size_of_val(INDEX_BUF),
+					)
+				},
+				label: None,
+				usage: wgpu::BufferUsages::INDEX,
 			})
 		};
 		Self {
@@ -150,6 +166,7 @@ impl<'a> State<'a> {
 			window,
 			pipeline,
 			vertex_buffer,
+			index_buffer,
 		}
 	}
 
@@ -188,7 +205,8 @@ impl<'a> State<'a> {
 		});
 		render_pass.set_pipeline(&self.pipeline);
 		render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-		render_pass.draw(0..3, 0..1);
+		render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+		render_pass.draw_indexed(0..(INDEX_BUF.len() as u32), 0, 0..1);
 		drop(render_pass);
 		self.queue.submit(std::iter::once(encoder.finish()));
 		output.present();
