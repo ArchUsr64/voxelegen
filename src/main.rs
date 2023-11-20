@@ -1,3 +1,4 @@
+#![feature(slice_flatten)]
 use wgpu::util::DeviceExt;
 use winit::window::Window;
 use winit::{event::*, event_loop::EventLoop, window::WindowBuilder};
@@ -36,12 +37,40 @@ const VERT_BUF: &[Vertex] = &[
 
 const INDEX_BUF: &[u16] = &[2, 0, 1, 2, 3, 0];
 
-const DBG_TEX: &[[u8; 4]] = &[
-	[255, 0, 255, 255],
-	[0, 0, 0, 255],
-	[0, 0, 0, 255],
-	[255, 0, 255, 255],
-];
+struct RawTexture<'a> {
+	width: usize,
+	height: usize,
+	pixels: &'a [[u8; 4]],
+}
+impl<'a> RawTexture<'a> {
+	pub const DEBUG_TEXTURE: Self = Self {
+		width: 2,
+		height: 2,
+		pixels: &[
+			[255, 0, 255, 255],
+			[0, 0, 0, 255],
+			[0, 0, 0, 255],
+			[255, 0, 255, 255],
+		],
+	};
+	pub fn size(&self) -> wgpu::Extent3d {
+		wgpu::Extent3d {
+			width: self.width as u32,
+			height: self.height as u32,
+			depth_or_array_layers: 1,
+		}
+	}
+	pub fn data_layout(&self) -> wgpu::ImageDataLayout {
+		wgpu::ImageDataLayout {
+			offset: 0,
+			bytes_per_row: Some(4 * self.width as u32),
+			rows_per_image: Some(self.height as u32),
+		}
+	}
+	pub fn data(&self) -> &[u8] {
+		self.pixels.flatten()
+	}
+}
 
 struct State<'a> {
 	surface: wgpu::Surface,
@@ -129,13 +158,10 @@ impl<'a> State<'a> {
 				usage: wgpu::BufferUsages::INDEX,
 			})
 		};
+		let raw_texture = RawTexture::DEBUG_TEXTURE;
 		let texture = device.create_texture(&wgpu::TextureDescriptor {
 			label: None,
-			size: wgpu::Extent3d {
-				width: 2,
-				height: 2,
-				depth_or_array_layers: 1,
-			},
+			size: raw_texture.size(),
 			mip_level_count: 1,
 			sample_count: 1,
 			dimension: wgpu::TextureDimension::D2,
@@ -150,22 +176,9 @@ impl<'a> State<'a> {
 				origin: wgpu::Origin3d::ZERO,
 				aspect: wgpu::TextureAspect::All,
 			},
-			unsafe {
-				std::slice::from_raw_parts(
-					DBG_TEX.as_ptr() as *const u8,
-					std::mem::size_of_val(DBG_TEX),
-				)
-			},
-			wgpu::ImageDataLayout {
-				offset: 0,
-				bytes_per_row: Some(8),
-				rows_per_image: Some(2),
-			},
-			wgpu::Extent3d {
-				width: 2,
-				height: 2,
-				depth_or_array_layers: 1,
-			},
+			raw_texture.data(),
+			raw_texture.data_layout(),
+			raw_texture.size(),
 		);
 		let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 		let texture_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
