@@ -1,3 +1,4 @@
+pub mod math;
 use wgpu::util::DeviceExt;
 use winit::window;
 mod texture;
@@ -46,10 +47,12 @@ pub struct Wgpu {
 	pipeline: wgpu::RenderPipeline,
 	vertex_buffer: wgpu::Buffer,
 	index_buffer: wgpu::Buffer,
-	uniform_buffer: wgpu::Buffer,
+	uniform_value_buffer: wgpu::Buffer,
+	uniform_translation_buffer: wgpu::Buffer,
 	texture_bind_group: wgpu::BindGroup,
 	uniform_bind_group: wgpu::BindGroup,
 	uniform_value: f32,
+	pub translation_matrix: math::Mat4x4,
 }
 
 impl Wgpu {
@@ -192,32 +195,64 @@ impl Wgpu {
 			],
 		});
 		let uniform_value = 0f32;
-		let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+		let uniform_value_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
 			contents: &uniform_value.to_ne_bytes(),
 			label: None,
 			usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
 		});
+		let translation_matrix = math::Mat4x4 {
+			elements: [
+				[1., 0., 0., 0.],
+				[0., 1., 0., 0.],
+				[0., 0., 1., 0.],
+				[0., 0., 0., 1.],
+			],
+		};
+		let uniform_translation_buffer =
+			device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+				contents: &translation_matrix.to_bytes(),
+				label: None,
+				usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+			});
 		let uniform_value_group_layout =
 			device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
 				label: None,
-				entries: &[wgpu::BindGroupLayoutEntry {
-					binding: 0,
-					visibility: wgpu::ShaderStages::FRAGMENT,
-					ty: wgpu::BindingType::Buffer {
-						ty: wgpu::BufferBindingType::Uniform,
-						has_dynamic_offset: false,
-						min_binding_size: None,
+				entries: &[
+					wgpu::BindGroupLayoutEntry {
+						binding: 0,
+						visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+						ty: wgpu::BindingType::Buffer {
+							ty: wgpu::BufferBindingType::Uniform,
+							has_dynamic_offset: false,
+							min_binding_size: None,
+						},
+						count: None,
 					},
-					count: None,
-				}],
+					wgpu::BindGroupLayoutEntry {
+						binding: 1,
+						visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+						ty: wgpu::BindingType::Buffer {
+							ty: wgpu::BufferBindingType::Uniform,
+							has_dynamic_offset: false,
+							min_binding_size: None,
+						},
+						count: None,
+					},
+				],
 			});
 		let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
 			label: None,
 			layout: &uniform_value_group_layout,
-			entries: &[wgpu::BindGroupEntry {
-				binding: 0,
-				resource: uniform_buffer.as_entire_binding(),
-			}],
+			entries: &[
+				wgpu::BindGroupEntry {
+					binding: 0,
+					resource: uniform_value_buffer.as_entire_binding(),
+				},
+				wgpu::BindGroupEntry {
+					binding: 1,
+					resource: uniform_translation_buffer.as_entire_binding(),
+				},
+			],
 		});
 		let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
 			label: None,
@@ -268,10 +303,12 @@ impl Wgpu {
 			pipeline,
 			vertex_buffer,
 			index_buffer,
-			uniform_buffer,
+			uniform_value_buffer,
+			uniform_translation_buffer,
 			texture_bind_group,
 			uniform_bind_group,
 			uniform_value,
+			translation_matrix,
 		}
 	}
 
@@ -308,8 +345,16 @@ impl Wgpu {
 			timestamp_writes: None,
 			occlusion_query_set: None,
 		});
-		self.queue
-			.write_buffer(&self.uniform_buffer, 0, &self.uniform_value.to_ne_bytes());
+		self.queue.write_buffer(
+			&self.uniform_value_buffer,
+			0,
+			&self.uniform_value.to_ne_bytes(),
+		);
+		self.queue.write_buffer(
+			&self.uniform_translation_buffer,
+			0,
+			&self.translation_matrix.to_bytes(),
+		);
 		render_pass.set_pipeline(&self.pipeline);
 		render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
 		render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
