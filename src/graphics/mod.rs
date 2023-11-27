@@ -29,13 +29,31 @@ impl Vertex {
 }
 
 const VERT_BUF: &[Vertex] = &[
-	Vertex::new(1., 1., 0., 1., 0.),
-	Vertex::new(-1., 1., 0., 0., 0.),
-	Vertex::new(-1., -1., 0., 0., 1.),
-	Vertex::new(1., -1., 0., 1., 1.),
+	Vertex::new(0.5, 0.5, -0.5, 0., 0.),
+	Vertex::new(0.5, 0.5, 0.5, 1., 0.),
+	Vertex::new(0.5, -0.5, 0.5, 1., 1.),
+	Vertex::new(0.5, -0.5, -0.5, 0., 1.),
+	Vertex::new(-0.5, 0.5, -0.5, 1., 0.),
+	Vertex::new(-0.5, 0.5, 0.5, 0., 0.),
+	Vertex::new(-0.5, -0.5, 0.5, 0., 1.),
+	Vertex::new(-0.5, -0.5, -0.5, 1., 1.),
 ];
 
-const INDEX_BUF: &[u16] = &[2, 0, 1, 2, 3, 0];
+#[rustfmt::skip]
+const INDEX_BUF: &[u16] = &[
+	1, 6, 2,
+	5, 6, 1,
+	0, 4, 5,
+	0, 5, 1,
+	0, 2, 3,
+	0, 1, 2,
+	5, 7, 6,
+	4, 7, 5,
+	4, 0, 3,
+	4, 3, 7,
+	3, 2, 6,
+	3, 6, 7,
+];
 
 pub struct Wgpu {
 	surface: wgpu::Surface,
@@ -204,7 +222,7 @@ impl Wgpu {
 			elements: [
 				[1., 0., 0., 0.],
 				[0., 1., 0., 0.],
-				[0., 0., 1., 0.],
+				[0., 0., 0., 0.],
 				[0., 0., 0., 1.],
 			],
 		};
@@ -365,9 +383,6 @@ impl Wgpu {
 		self.queue.submit(std::iter::once(encoder.finish()));
 		output.present();
 		self.uniform_value += 0.05;
-		if self.uniform_value > 1. {
-			self.uniform_value = 0.
-		}
 		Ok(())
 	}
 }

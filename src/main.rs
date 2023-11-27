@@ -28,7 +28,6 @@ async fn main() {
 		} if window_id == state.window().id() => match event {
 			WindowEvent::CloseRequested => control_flow.exit(),
 			WindowEvent::Resized(new_size) => state.resize(*new_size),
-			WindowEvent::RedrawRequested => println!("Redraw"),
 			WindowEvent::KeyboardInput { event: x, .. } => match x {
 				KeyEvent {
 					physical_key: y, ..
@@ -37,8 +36,8 @@ async fn main() {
 					PhysicalKey::Code(KeyCode::KeyS) => pos.y -= 0.05,
 					PhysicalKey::Code(KeyCode::KeyA) => pos.x -= 0.05,
 					PhysicalKey::Code(KeyCode::KeyD) => pos.x += 0.05,
-					PhysicalKey::Code(KeyCode::ShiftLeft) => pos.z -= 0.05,
-					PhysicalKey::Code(KeyCode::Space) => pos.z += 0.05,
+					PhysicalKey::Code(KeyCode::KeyZ) => pos.z -= 0.05,
+					PhysicalKey::Code(KeyCode::KeyX) => pos.z += 0.05,
 					_ => {}
 				},
 			},
@@ -50,6 +49,6 @@ async fn main() {
 			state.translation_matrix.elements[3][2] = pos.z;
 			state.render().unwrap()
 		}
-		x => println!("{x:?}"),
+		_ => (),
 	});
 }

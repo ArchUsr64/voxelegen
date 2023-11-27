@@ -22,7 +22,25 @@ struct VertexOutput {
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.uv = in.uv;
-    out.clip_position = matrix * vec4<f32>(in.pos, 1.);
+    var rot_x = mat4x4<f32>(
+        vec4<f32>(1., 0., 0., 0.),
+        vec4<f32>(0., cos(val), -sin(val), 0.),
+        vec4<f32>(0., sin(val), cos(val), 0.),
+        vec4<f32>(0., 0., 0., 1.),
+    );
+    var rot_y = mat4x4<f32>(
+        vec4<f32>(cos(val), 0., sin(val), 0.),
+        vec4<f32>(0., 1., 0., 0.),
+        vec4<f32>(-sin(val), 0., cos(val), 0.),
+        vec4<f32>(0., 0., 0., 1.),
+    );
+    var rot_z = mat4x4<f32>(
+        vec4<f32>(cos(val), -sin(val), 0., 0.),
+        vec4<f32>(sin(val), cos(val), 0., 0.),
+        vec4<f32>(0., 0., 1., 0.),
+        vec4<f32>(0., 0., 0., 1.),
+    );
+    out.clip_position = matrix * rot_z * rot_y * rot_x * vec4<f32>(in.pos, 1.);
     return out;
 }
 
