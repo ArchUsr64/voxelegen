@@ -1,1 +1,6 @@
-/target
+*.o
+*.so
+a.out
+*.bck
+.cache
+compile_commands.json
