@@ -1,44 +1,60 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#define GLAD_GL_IMPLEMENTATION // Necessary for headeronly version.
 #include <glad/gl.h>
-
 #include <GLFW/glfw3.h>
-
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+void key_callback(
+	GLFWwindow* window,
+	int key,
+	int scancode,
+	int action,
+	int mode) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
 int main(void) {
-    glfwInit();
+	int ret;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	ret = glfwInit();
+	if (ret != GLFW_TRUE) {
+		sprintf(stderr, "Failed to initialize glfw");
+		return ret;
+	}
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "[glad] GL with GLFW", NULL, NULL);
-    glfwMakeContextCurrent(window);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    glfwSetKeyCallback(window, key_callback);
+	GLFWwindow* window =
+		glfwCreateWindow(WIDTH, HEIGHT, "[glad] GL with GLFW", NULL, NULL);
+	if (!window) {
+		sprintf(stderr, "Failed to create window");
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
 
-    int version = gladLoadGL(glfwGetProcAddress);
-    printf("GL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+	glfwSetKeyCallback(window, key_callback);
 
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+	int version = gladLoadGL(glfwGetProcAddress);
+	printf(
+		"GL %d.%d\n",
+		GLAD_VERSION_MAJOR(version),
+		GLAD_VERSION_MINOR(version));
 
-        glClearColor(0.7f, 0.9f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
 
-        glfwSwapBuffers(window);
-    }
+		glClearColor(0.7f, 0.9f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-    glfwTerminate();
+		glfwSwapBuffers(window);
+	}
 
-    return 0;
+	glfwTerminate();
+
+	return 0;
 }
