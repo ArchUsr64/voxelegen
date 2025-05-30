@@ -54,17 +54,16 @@ struct ImageRGB image_from_ppm(char* file_data) {
 }
 
 char* read_file(const char* filename) {
-	char *ret = malloc(UTIL_MAX_FILE_SIZE * sizeof(char)), *i;
+	char *ret = calloc(UTIL_MAX_FILE_SIZE, sizeof(char)), *i;
 	FILE* fp = fopen(filename, "r");
 	if (!fp)
 		return NULL;
 
 	i = ret;
-	*i = fgetc(fp);
-	while (*i != EOF) {
+	while (fread(i, 1, 1, fp))
 		i++;
-		*i = fgetc(fp);
-	}
+
+	*(int*)i = EOF;
 
 	fclose(fp);
 	return ret;
