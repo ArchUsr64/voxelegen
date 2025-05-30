@@ -8,6 +8,10 @@
 
 #define PI 3.14
 
+#define FRAGMENT_SHADER "shaders/fragment.glsl"
+#define VERTEX_SHADER		"shaders/vertex.glsl"
+#define ATLAS_PPM				"res/atlas.ppm"
+
 const GLuint WIDTH = 958, HEIGHT = 1998;
 
 // clang-format off
@@ -48,7 +52,7 @@ void key_callback(
 		wireframe_mode = !wireframe_mode;
 }
 
-void cursor_pos_callback(GLFWwindow *window, double x, double y) {
+void cursor_pos_callback(GLFWwindow* window, double x, double y) {
 	cursor_x = x;
 	cursor_y = y;
 }
@@ -60,18 +64,20 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main(void) {
+	struct ImageRGB atlas_texture;
+	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
 	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program;
-	char *vert_shader, *frag_shader;
 	GLint vert_in_pos, vert_in_color;
 	char log_status[512];
 	GLFWwindow* window;
-	int ret, version;
+	int ret = 0, version;
 
 	ret = glfwInit();
 	if (ret != GLFW_TRUE) {
 		fprintf(stderr, "Failed to initialize glfw\n");
-		return ret;
+		goto exit;
 	}
+	ret = 0;
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -80,8 +86,8 @@ int main(void) {
 	window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (!window) {
 		fprintf(stderr, "Failed to create window\n");
-		glfwTerminate();
-		return -1;
+		ret = -1;
+		goto exit;
 	}
 
 	glfwMakeContextCurrent(window);
@@ -96,11 +102,11 @@ int main(void) {
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	vert_shader = read_file("shaders/vertex.glsl");
+	vert_shader = read_file(VERTEX_SHADER);
 	if (!vert_shader) {
-		fprintf(stderr, "Failed to load vertex shader\n");
-		glfwTerminate();
-		return -1;
+		fprintf(stderr, "Failed to load '%s'\n", VERTEX_SHADER);
+		ret = -1;
+		goto exit;
 	}
 
 	vsh = glCreateShader(GL_VERTEX_SHADER);
@@ -111,17 +117,15 @@ int main(void) {
 	if (!ret) {
 		glGetShaderInfoLog(vsh, sizeof(log_status), NULL, log_status);
 		fprintf(stderr, "VSH compilation failed:\n%s\n", log_status);
-		free(vert_shader);
-		glfwTerminate();
-		return -1;
+		ret = -1;
+		goto exit;
 	}
 
 	frag_shader = read_file("shaders/fragment.glsl");
 	if (!frag_shader) {
-		fprintf(stderr, "Failed to load fragment shader\n");
-		free(vert_shader);
-		glfwTerminate();
-		return -1;
+		fprintf(stderr, "Failed to load '%s'\n", FRAGMENT_SHADER);
+		ret = -1;
+		goto exit;
 	}
 
 	fsh = glCreateShader(GL_FRAGMENT_SHADER);
@@ -132,10 +136,8 @@ int main(void) {
 	if (!ret) {
 		glGetShaderInfoLog(fsh, sizeof(log_status), NULL, log_status);
 		fprintf(stderr, "FSH compilation failed:\n%s\n", log_status);
-		free(vert_shader);
-		free(frag_shader);
-		glfwTerminate();
-		return -1;
+		ret = -1;
+		goto exit;
 	}
 
 	shader_program = glCreateProgram();
@@ -150,10 +152,8 @@ int main(void) {
 	if (!ret) {
 		glGetShaderInfoLog(shader_program, sizeof(log_status), NULL, log_status);
 		fprintf(stderr, "FSH compilation failed:\n%s\n", log_status);
-		free(vert_shader);
-		free(frag_shader);
-		glfwTerminate();
-		return -1;
+		ret = -1;
+		goto exit;
 	}
 
 	rotation_uniform = glGetUniformLocation(shader_program, "rotation");
@@ -166,7 +166,13 @@ int main(void) {
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(vert_in_pos, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+	glVertexAttribPointer(
+		vert_in_pos,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		6 * sizeof(float),
+		NULL);
 	glEnableVertexAttribArray(vert_in_pos);
 	glVertexAttribPointer(
 		vert_in_color,
@@ -185,6 +191,19 @@ int main(void) {
 		indices,
 		GL_STATIC_DRAW);
 
+	atlas_file = read_file(ATLAS_PPM);
+	if (!atlas_file) {
+		fprintf(stderr, "Failed to read '%s'\n", ATLAS_PPM);
+		ret = -1;
+		goto exit;
+	}
+	atlas_texture = image_from_ppm(atlas_file);
+	if (!atlas_texture.value) {
+		fprintf(stderr, "Failed to parse ppm file '%s'\n", ATLAS_PPM);
+		ret = -1;
+		goto exit;
+	}
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
@@ -193,7 +212,10 @@ int main(void) {
 
 		glPolygonMode(GL_FRONT_AND_BACK, wireframe_mode ? GL_LINE : GL_FILL);
 		glUseProgram(shader_program);
-		glUniform2f(rotation_uniform, 2 * PI * cursor_x / screen_width, 2 * PI * cursor_y / screen_height);
+		glUniform2f(
+			rotation_uniform,
+			2 * PI * cursor_x / screen_width,
+			2 * PI * cursor_y / screen_height);
 		glBindVertexArray(vao);
 		glDrawElements(
 			GL_TRIANGLES,
@@ -204,9 +226,11 @@ int main(void) {
 		glfwSwapBuffers(window);
 	}
 
+exit:
 	free(vert_shader);
 	free(frag_shader);
+	free(atlas_file);
 	glfwTerminate();
 
-	return 0;
+	return ret;
 }
