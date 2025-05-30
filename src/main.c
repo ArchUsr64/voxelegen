@@ -30,6 +30,7 @@ unsigned int indices[] = {
 };
 // clang-format on
 
+unsigned char wireframe_mode = 0;
 float cursor_x = 0.0;
 float cursor_y = 0.0;
 float screen_width = 0.0;
@@ -43,6 +44,8 @@ void key_callback(
 	int mode) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+		wireframe_mode = !wireframe_mode;
 }
 
 void cursor_pos_callback(GLFWwindow *window, double x, double y) {
@@ -187,6 +190,7 @@ int main(void) {
 		glClearColor(0., 0., 0., 0.);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glPolygonMode(GL_FRONT_AND_BACK, wireframe_mode ? GL_LINE : GL_FILL);
 		glUseProgram(shader_program);
 		rotation_uniform = glGetUniformLocation(shader_program, "rotation");
 		glUniform2f(rotation_uniform, 2 * PI * cursor_x / screen_width, 2 * PI * cursor_y / screen_height);
