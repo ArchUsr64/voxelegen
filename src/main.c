@@ -6,6 +6,8 @@
 
 #include "util.h"
 
+#define PI 3.14
+
 const GLuint WIDTH = 958, HEIGHT = 1998;
 
 // clang-format off
@@ -28,6 +30,11 @@ unsigned int indices[] = {
 };
 // clang-format on
 
+float cursor_x = 0.0;
+float cursor_y = 0.0;
+float screen_width = 0.0;
+float screen_height = 0.0;
+
 void key_callback(
 	GLFWwindow* window,
 	int key,
@@ -38,17 +45,23 @@ void key_callback(
 		glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+void cursor_pos_callback(GLFWwindow *window, double x, double y) {
+	cursor_x = x;
+	cursor_y = y;
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	screen_width = width;
+	screen_height = height;
 	glViewport(0, 0, width, height);
 }
 
 int main(void) {
-	char log_status[512];
-	char *vert_shader, *frag_shader;
 	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program;
+	char *vert_shader, *frag_shader;
+	char log_status[512];
 	GLFWwindow* window;
 	int ret, version;
-	float rotation_angle = 0;
 
 	ret = glfwInit();
 	if (ret != GLFW_TRUE) {
@@ -76,6 +89,7 @@ int main(void) {
 		GLAD_VERSION_MINOR(version));
 
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	vert_shader = read_file("shaders/vertex.glsl");
@@ -178,7 +192,7 @@ int main(void) {
 
 		glUseProgram(shader_program);
 		rotation_uniform = glGetUniformLocation(shader_program, "rotation");
-		glUniform1f(rotation_uniform, rotation_angle);
+		glUniform2f(rotation_uniform, 2 * PI * cursor_x / screen_width, 2 * PI * cursor_y / screen_height);
 		glBindVertexArray(vao);
 		glDrawElements(
 			GL_TRIANGLES,
@@ -187,7 +201,6 @@ int main(void) {
 			0);
 
 		glfwSwapBuffers(window);
-		rotation_angle += 0.01;
 	}
 
 	free(vert_shader);
