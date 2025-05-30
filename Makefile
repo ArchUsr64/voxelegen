@@ -1,12 +1,13 @@
 all: main
 
 export CC = clang
-export CCFLAGS = -std=c99 -pedantic -Wall
+export CCFLAGS = -std=c99 -pedantic -Wall -g
 
 LD = mold
 LDFLAGS = -L lib/glfw/src -lglfw
 
-OBJECTS = $(wildcard src/*.o)
+SOURCES = $(wildcard src/*.o)
+OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
 OBJECTS += lib/glad/gl.o
 
 main: lib src $(OBJECTS)

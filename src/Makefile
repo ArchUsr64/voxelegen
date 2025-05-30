@@ -1,4 +1,7 @@
-all: *.o
+SOURCES = $(wildcard *.c *.h)
+OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
+
+all: $(OBJECTS)
 
 .PHONY: clean
 
