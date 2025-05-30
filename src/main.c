@@ -180,10 +180,6 @@ int main(void) {
 		indices,
 		GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(0);
-
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
