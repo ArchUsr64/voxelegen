@@ -156,6 +156,7 @@ int main(void) {
 		return -1;
 	}
 
+	rotation_uniform = glGetUniformLocation(shader_program, "rotation");
 	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
 	vert_in_color = glGetAttribLocation(shader_program, "in_color");
 
@@ -192,7 +193,6 @@ int main(void) {
 
 		glPolygonMode(GL_FRONT_AND_BACK, wireframe_mode ? GL_LINE : GL_FILL);
 		glUseProgram(shader_program);
-		rotation_uniform = glGetUniformLocation(shader_program, "rotation");
 		glUniform2f(rotation_uniform, 2 * PI * cursor_x / screen_width, 2 * PI * cursor_y / screen_height);
 		glBindVertexArray(vao);
 		glDrawElements(
