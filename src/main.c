@@ -16,21 +16,15 @@ const GLuint WIDTH = 958, HEIGHT = 1998;
 
 // clang-format off
 float vertices[] = {
-	// coord
-	0.0, 0.5, 0.0,
-	// color
-	1.0, 0.0, 0.0,
-	// coord
-	-0.5, -0.5, 0.0,
-	// color
-	0.0, 0.0, 1.0,
-	// coord
-	0.5, -0.5, 0.0,
-	// color
-	0.0, 1.0, 0.0,
+	// x, y, z, u, v
+	0.5, -0.5, 0.0, 1.0, 0.0, // bottom-right
+	0.5, 0.5, 0.0, 1.0, 1.0, // top-right
+	-0.5, 0.5, 0.0, 0.0, 1.0, // top-left
+	-0.5, -0.5, 0.0, 0.0, 0.0, // bottom-right
 };
 unsigned int indices[] = {
-	0, 1, 2,
+	0, 1, 3,
+	1, 2, 3,
 };
 // clang-format on
 
@@ -64,10 +58,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main(void) {
-	struct ImageRGB atlas_texture;
+	struct ImageRGB atlas_image;
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
-	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program;
-	GLint vert_in_pos, vert_in_color;
+	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program, atlas_texture;
+	GLint vert_in_pos, vert_in_uv;
 	char log_status[512];
 	GLFWwindow* window;
 	int ret = 0, version;
@@ -158,7 +152,17 @@ int main(void) {
 
 	rotation_uniform = glGetUniformLocation(shader_program, "rotation");
 	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
-	vert_in_color = glGetAttribLocation(shader_program, "in_color");
+	if (vert_in_pos < 0) {
+		fprintf(stderr, "Failed to query in_pos location");
+		ret = vert_in_pos;
+		goto exit;
+	}
+	vert_in_uv = glGetAttribLocation(shader_program, "in_uv");
+	if (vert_in_uv < 0) {
+		fprintf(stderr, "Failed to query in_uv location");
+		ret = vert_in_uv;
+		goto exit;
+	}
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -171,17 +175,17 @@ int main(void) {
 		3,
 		GL_FLOAT,
 		GL_FALSE,
-		6 * sizeof(float),
+		5 * sizeof(float),
 		NULL);
 	glEnableVertexAttribArray(vert_in_pos);
 	glVertexAttribPointer(
-		vert_in_color,
-		3,
+		vert_in_uv,
+		2,
 		GL_FLOAT,
 		GL_FALSE,
-		6 * sizeof(float),
+		5 * sizeof(float),
 		(void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(vert_in_color);
+	glEnableVertexAttribArray(vert_in_uv);
 
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -197,12 +201,19 @@ int main(void) {
 		ret = -1;
 		goto exit;
 	}
-	atlas_texture = image_from_ppm(atlas_file);
-	if (!atlas_texture.value) {
+	atlas_image = image_from_ppm(atlas_file);
+	if (!atlas_image.data) {
 		fprintf(stderr, "Failed to parse ppm file '%s'\n", ATLAS_PPM);
 		ret = -1;
 		goto exit;
 	}
+
+	glGenTextures(1, &atlas_texture);
+	glBindTexture(GL_TEXTURE_2D, atlas_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, atlas_image.width, atlas_image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, atlas_image.data);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -216,6 +227,8 @@ int main(void) {
 			rotation_uniform,
 			2 * PI * cursor_x / screen_width,
 			2 * PI * cursor_y / screen_height);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, atlas_texture);
 		glBindVertexArray(vao);
 		glDrawElements(
 			GL_TRIANGLES,
@@ -226,6 +239,7 @@ int main(void) {
 		glfwSwapBuffers(window);
 	}
 
+	ret = 0;
 exit:
 	free(vert_shader);
 	free(frag_shader);

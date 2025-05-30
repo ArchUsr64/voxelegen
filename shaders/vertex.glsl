@@ -1,15 +1,17 @@
 #version 330 core
 
 in vec3 in_pos;
-in vec3 in_color;
+in vec2 in_uv;
 
 uniform vec2 rotation;
 
-out vec4 vert_color;
+out vec2 uv;
 
 void main() {
 	vec3 rotated_pos;
 	mat3 rotation_matrix_x, rotation_matrix_y;
+
+	uv = in_uv;
 
 	rotation_matrix_x[0] = vec3(1.0, 0.0, 0.0);
 	rotation_matrix_x[1] = vec3(0.0, cos(rotation.y), -sin(rotation.y));
@@ -21,5 +23,4 @@ void main() {
 
 	rotated_pos = rotation_matrix_x * rotation_matrix_y * in_pos;
 	gl_Position = vec4(rotated_pos.x, rotated_pos.y, rotated_pos.z, 1.0);
-	vert_color = vec4(in_color, 1.0);
 }
