@@ -1,7 +1,7 @@
 #version 330 core
 
-layout (location = 0) in vec3 in_pos;
-layout (location = 1) in vec3 in_color;
+in vec3 in_pos;
+in vec3 in_color;
 
 uniform vec2 rotation;
 

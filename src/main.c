@@ -62,6 +62,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 int main(void) {
 	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program;
 	char *vert_shader, *frag_shader;
+	GLint vert_in_pos, vert_in_color;
 	char log_status[512];
 	GLFWwindow* window;
 	int ret, version;
@@ -155,22 +156,25 @@ int main(void) {
 		return -1;
 	}
 
+	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
+	vert_in_color = glGetAttribLocation(shader_program, "in_color");
+
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
-	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(vert_in_pos, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+	glEnableVertexAttribArray(vert_in_pos);
 	glVertexAttribPointer(
-		1,
+		vert_in_color,
 		3,
 		GL_FLOAT,
 		GL_FALSE,
 		6 * sizeof(float),
 		(void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(vert_in_color);
 
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
