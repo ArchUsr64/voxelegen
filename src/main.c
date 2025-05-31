@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "util.h"
+#include "matrix.h"
 
 #define PI 3.14
 
@@ -27,10 +28,10 @@ float vertices[] = {
 	0.5, 0.5, 0.5, 0.0, 0.0, // top-right
 	-0.5, 0.5, 0.5, 1.0, 0.0, // top-left
 	-0.5, -0.5, 0.5, 1.0, 1.0, // bottom-left
-	// top
+	// top-only
 	0.5, 0.5, 0.5, 1.0, 1.0, // top-right
 	-0.5, 0.5, 0.5, 0.0, 1.0, // top-left
-	// bottom
+	// bottom-only
 	0.5, -0.5, 0.5, 1.0, 0.0, // bottom-right
 	-0.5, -0.5, 0.5, 0.0, 0.0, // bottom-left
 };
@@ -90,10 +91,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main(void) {
+	Matrix4 projection_matrix;
 	struct ImageRGB atlas_image;
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
 	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program,
-		atlas_texture, block_type_uniform;
+		atlas_texture, block_type_uniform, projection_matrix_uniform;
 	GLint vert_in_pos, vert_in_uv;
 	char log_status[512];
 	GLFWwindow* window;
@@ -185,6 +187,8 @@ int main(void) {
 
 	rotation_uniform = glGetUniformLocation(shader_program, "rotation");
 	block_type_uniform = glGetUniformLocation(shader_program, "block_type");
+	projection_matrix_uniform =
+		glGetUniformLocation(shader_program, "projection_matrix");
 	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
 	if (vert_in_pos < 0) {
 		fprintf(stderr, "Failed to query in_pos location");
@@ -247,11 +251,21 @@ int main(void) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, atlas_image.width, atlas_image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, atlas_image.data);
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGB,
+		atlas_image.width,
+		atlas_image.height,
+		0,
+		GL_RGB,
+		GL_UNSIGNED_BYTE,
+		atlas_image.data);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);  
+	glFrontFace(GL_CCW);
+	float near = 0.01, far = 1000, fov = PI / 2;
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -259,13 +273,24 @@ int main(void) {
 		glClearColor(0., 0., 0., 0.);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		perespective_projection_matrix(
+			near,
+			far,
+			fov,
+			screen_width / screen_height,
+			&projection_matrix);
 		glPolygonMode(GL_FRONT_AND_BACK, wireframe_mode ? GL_LINE : GL_FILL);
 		glUseProgram(shader_program);
 		glUniform1i(block_type_uniform, GRASS);
 		glUniform2f(
 			rotation_uniform,
-			2 * PI * cursor_x / screen_width,
-			2 * PI * cursor_y / screen_height);
+			-2 * PI * cursor_x / screen_width,
+			-2 * PI * cursor_y / screen_height);
+		glUniformMatrix4fv(
+			projection_matrix_uniform,
+			1,
+			GL_TRUE,
+			projection_matrix);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, atlas_texture);
 		glBindVertexArray(vao);

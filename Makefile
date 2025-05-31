@@ -4,7 +4,7 @@ export CC = clang
 export CCFLAGS = -std=c99 -pedantic -Wall -g
 
 LD = mold
-LDFLAGS = -L lib/glfw/src -lglfw
+LDFLAGS = -L lib/glfw/src -lglfw -lm
 
 SOURCES = $(wildcard src/*.o)
 OBJECTS = $(patsubst %.c, %.o, $(SOURCES))
