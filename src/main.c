@@ -128,6 +128,9 @@ int main(void) {
 		GLAD_VERSION_MINOR(version));
 
 	glfwSetKeyCallback(window, key_callback);
+	if (glfwRawMouseMotionSupported())
+		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, cursor_pos_callback);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
