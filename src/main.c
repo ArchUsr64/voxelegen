@@ -17,16 +17,48 @@ const GLuint WIDTH = 958, HEIGHT = 1998;
 // clang-format off
 float vertices[] = {
 	// x, y, z, u, v
-	0.5, -0.5, 0.0, 1.0, 0.0, // bottom-right
-	0.5, 0.5, 0.0, 1.0, 1.0, // top-right
-	-0.5, 0.5, 0.0, 0.0, 1.0, // top-left
-	-0.5, -0.5, 0.0, 0.0, 0.0, // bottom-right
+	//front
+	0.5, -0.5, -0.5, 1.0, 1.0, // bottom-right
+	0.5, 0.5, -0.5, 1.0, 0.0, // top-right
+	-0.5, 0.5, -0.5, 0.0, 0.0, // top-left
+	-0.5, -0.5, -0.5, 0.0, 1.0, // bottom-left
+	// back
+	0.5, -0.5, 0.5, 0.0, 1.0, // bottom-right
+	0.5, 0.5, 0.5, 0.0, 0.0, // top-right
+	-0.5, 0.5, 0.5, 1.0, 0.0, // top-left
+	-0.5, -0.5, 0.5, 1.0, 1.0, // bottom-left
+	// top
+	0.5, 0.5, 0.5, 1.0, 1.0, // top-right
+	-0.5, 0.5, 0.5, 0.0, 1.0, // top-left
+	// bottom
+	0.5, -0.5, 0.5, 1.0, 0.0, // bottom-right
+	-0.5, -0.5, 0.5, 0.0, 0.0, // bottom-left
 };
 unsigned int indices[] = {
+	//sides
 	0, 1, 3,
 	1, 2, 3,
+	0, 5, 1,
+	0, 4, 5,
+	6, 5, 4,
+	7, 6, 4,
+	2, 6, 7,
+	3, 2, 7,
+	//top
+	1, 8, 2,
+	2, 8, 9,
+	//bottom
+	3, 10, 0,
+	11, 10, 3,
 };
 // clang-format on
+
+enum BLOCK_TYPE {
+	GRASS,
+	DIRT,
+	STONE,
+	WATER,
+};
 
 unsigned char wireframe_mode = 0;
 float cursor_x = 0.0;
@@ -60,7 +92,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 int main(void) {
 	struct ImageRGB atlas_image;
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
-	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program, atlas_texture;
+	GLuint vbo, ebo, vao, vsh, fsh, rotation_uniform, shader_program,
+		atlas_texture, block_type_uniform;
 	GLint vert_in_pos, vert_in_uv;
 	char log_status[512];
 	GLFWwindow* window;
@@ -151,6 +184,7 @@ int main(void) {
 	}
 
 	rotation_uniform = glGetUniformLocation(shader_program, "rotation");
+	block_type_uniform = glGetUniformLocation(shader_program, "block_type");
 	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
 	if (vert_in_pos < 0) {
 		fprintf(stderr, "Failed to query in_pos location");
@@ -215,6 +249,10 @@ int main(void) {
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, atlas_image.width, atlas_image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, atlas_image.data);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);  
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
@@ -223,6 +261,7 @@ int main(void) {
 
 		glPolygonMode(GL_FRONT_AND_BACK, wireframe_mode ? GL_LINE : GL_FILL);
 		glUseProgram(shader_program);
+		glUniform1i(block_type_uniform, GRASS);
 		glUniform2f(
 			rotation_uniform,
 			2 * PI * cursor_x / screen_width,
