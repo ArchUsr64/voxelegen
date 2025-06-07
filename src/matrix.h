@@ -5,6 +5,8 @@
 typedef float Matrix4[4][4];
 typedef float Point[4];
 
+void matrix_cpy(Matrix4* dest, Matrix4* src);
+
 // Does a *= b
 void matrix_multiply(Matrix4* a, Matrix4* b);
 

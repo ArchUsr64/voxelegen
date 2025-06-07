@@ -5,6 +5,8 @@
 
 #define PPM_MAGIC 0x5036 /* "P6" */
 
+#define CLAMP(val, min, max) ((val) > (max) ? (max) : ((val) < (min) ? (min) : val))
+
 struct ImageRGB {
 	unsigned int width, height;
 	unsigned char* data;

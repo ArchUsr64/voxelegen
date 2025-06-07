@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-static void matrix_cpy(Matrix4* dest, Matrix4* src) {
+void matrix_cpy(Matrix4* dest, Matrix4* src) {
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++)
 			(*dest)[i][j] = (*src)[i][j];
