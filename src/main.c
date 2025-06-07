@@ -16,29 +16,31 @@
 #define VERTEX_SHADER		"shaders/vertex.glsl"
 #define ATLAS_PPM				"res/atlas.ppm"
 
+#define CHUNK_SIZE 400
+
 const GLuint WIDTH = 958, HEIGHT = 1998;
 
 // clang-format off
-float vertices[] = {
+float cube_vertices[] = {
 	// x, y, z, u, v
 	//front
-	0.5, -0.5, -0.5, 1.0, 1.0, // bottom-right
-	0.5, 0.5, -0.5, 1.0, 0.0, // top-right
-	-0.5, 0.5, -0.5, 0.0, 0.0, // top-left
-	-0.5, -0.5, -0.5, 0.0, 1.0, // bottom-left
+	1.0, 0.0, 0.0, 1.0, 1.0, // bottom-right
+	1.0, 1.0, 0.0, 1.0, 0.0, // top-right
+	0.0, 1.0, 0.0, 0.0, 0.0, // top-left
+	0.0, 0.0, 0.0, 0.0, 1.0, // bottom-left
 	// back
-	0.5, -0.5, 0.5, 0.0, 1.0, // bottom-right
-	0.5, 0.5, 0.5, 0.0, 0.0, // top-right
-	-0.5, 0.5, 0.5, 1.0, 0.0, // top-left
-	-0.5, -0.5, 0.5, 1.0, 1.0, // bottom-left
+	1.0, 0.0, 1.0, 0.0, 1.0, // bottom-right
+	1.0, 1.0, 1.0, 0.0, 0.0, // top-right
+	0.0, 1.0, 1.0, 1.0, 0.0, // top-left
+	0.0, 0.0, 1.0, 1.0, 1.0, // bottom-left
 	// top-only
-	0.5, 0.5, 0.5, 1.0, 1.0, // top-right
-	-0.5, 0.5, 0.5, 0.0, 1.0, // top-left
+	1.0, 1.0, 1.0, 1.0, 1.0, // top-right
+	0.0, 1.0, 1.0, 0.0, 1.0, // top-left
 	// bottom-only
-	0.5, -0.5, 0.5, 1.0, 0.0, // bottom-right
-	-0.5, -0.5, 0.5, 0.0, 0.0, // bottom-left
+	1.0, 0.0, 1.0, 1.0, 0.0, // bottom-right
+	0.0, 0.0, 1.0, 0.0, 0.0, // bottom-left
 };
-unsigned int indices[] = {
+unsigned cube_indices[] = {
 	//sides
 	0, 1, 3,
 	1, 2, 3,
@@ -56,6 +58,32 @@ unsigned int indices[] = {
 	11, 10, 3,
 };
 // clang-format on
+float vertices[CHUNK_SIZE * CHUNK_SIZE * sizeof(cube_vertices) / sizeof(float)];
+unsigned indices[CHUNK_SIZE * CHUNK_SIZE * sizeof(cube_indices) / sizeof(float)];
+
+static void create_chunk_vertices(int pos_x, int pos_y, int pos_z, float* buffer) {
+	for (unsigned i = 0; i < (sizeof(cube_vertices) / sizeof(float)); i += 5) {
+		*(buffer + i) = cube_vertices[i] + pos_x;
+		*(buffer + i + 1) = cube_vertices[i + 1] + pos_y;
+		*(buffer + i + 2) = cube_vertices[i + 2] + pos_z;
+		*(buffer + i + 3) = cube_vertices[i + 3];
+		*(buffer + i + 4) = cube_vertices[i + 4];
+	}
+}
+
+static void create_chunk() {
+	for (unsigned i = 0; i < CHUNK_SIZE; i++) {
+		for (unsigned j = 0; j < CHUNK_SIZE; j++) {
+			unsigned idx = i * CHUNK_SIZE + j;
+			unsigned vert_idx = idx * sizeof(cube_vertices) / sizeof(float);
+			unsigned index_idx = idx * sizeof(cube_indices) / sizeof(unsigned);
+			create_chunk_vertices(i, rand() % 4, j, vertices + vert_idx);
+			for (unsigned k = 0; k < sizeof(cube_indices) / sizeof(unsigned); k++) {
+				indices[index_idx + k] = cube_indices[k] + 12 * idx;
+			}
+		}
+	}
+}
 
 enum BLOCK_TYPE {
 	GRASS,
@@ -122,6 +150,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main(void) {
+	camera.position[0] = CHUNK_SIZE / 2;
+	camera.position[2] = CHUNK_SIZE / 2;
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
 	GLuint vbo, ebo, vao, vsh, fsh, shader_program, atlas_texture,
 		block_type_uniform, projection_matrix_uniform, view_matrix_uniform,
@@ -141,6 +171,7 @@ int main(void) {
 	}
 	ret = 0;
 
+	create_chunk();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -303,6 +334,7 @@ int main(void) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+	glEnable(GL_DEPTH_TEST);
 
 	float near = 0.01, far = 1000, fov = PI / 2;
 
@@ -311,8 +343,8 @@ int main(void) {
 		camera_to_view_matrix(camera, &view_matrix);
 		glfwPollEvents();
 
-		glClearColor(0., 0., 0., 0.);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.2, 0.8, 1., 0.);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		perespective_projection_matrix(
 			near,
