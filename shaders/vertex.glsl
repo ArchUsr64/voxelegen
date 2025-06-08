@@ -8,7 +8,6 @@ uniform mat4 view_matrix;
 uniform uint tick;
 
 out vec2 uv;
-out int block_type;
 
 void main() {
 	vec4 out_pos;
@@ -25,6 +24,4 @@ void main() {
 	out_pos = vec4(in_pos, 1.0);
 	out_pos *= translation_matrix;
 	gl_Position = projection_matrix * inverse(view_matrix) * out_pos;
-
-	block_type = int(in_pos.y);
 }
