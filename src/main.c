@@ -16,6 +16,7 @@
 #define FRAGMENT_SHADER "shaders/fragment.glsl"
 #define VERTEX_SHADER		"shaders/vertex.glsl"
 #define ATLAS_PPM				"res/atlas.ppm"
+#define ATLAS_PPM_DBG				"res/atlas_debug.ppm"
 
 const GLuint WIDTH = 958, HEIGHT = 1998;
 
@@ -88,6 +89,9 @@ int main(void) {
 	int ret = 0, version;
 	char log_status[512];
 	GLFWwindow* window;
+
+	if (getenv("DEBUG"))
+		glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
 
 	ret = glfwInit();
 	if (ret != GLFW_TRUE) {
@@ -225,7 +229,11 @@ int main(void) {
 		BASE_BLOCK_INDICES,
 		GL_STATIC_DRAW);
 
-	atlas_file = read_file(ATLAS_PPM);
+	if (getenv("DEBUG"))
+		atlas_file = read_file(ATLAS_PPM_DBG);
+	else
+		atlas_file = read_file(ATLAS_PPM);
+
 	if (!atlas_file) {
 		fprintf(stderr, "Failed to read '%s'\n", ATLAS_PPM);
 		ret = -1;
