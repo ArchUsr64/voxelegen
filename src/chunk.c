@@ -3,8 +3,10 @@
 #include "terrain_gen.h"
 #include "util.h"
 
-struct chunk_mesh generate_chunk_mesh(int x, int y, int z) {
-	struct chunk_mesh res = {.world_position = {x, y, z}};
+struct chunk_mesh generate_chunk_mesh(int chunk_x, int chunk_y, int chunk_z) {
+	struct chunk_mesh res = {
+		.world_position =
+			{CHUNK_SIZE * chunk_x, CHUNK_SIZE * chunk_y, CHUNK_SIZE * chunk_z}};
 	unsigned block_index = 0;
 	unsigned i, j, k;
 
@@ -12,11 +14,11 @@ struct chunk_mesh generate_chunk_mesh(int x, int y, int z) {
 	res.indices = vec_unsigned_new();
 
 	for (i = 0; i < CHUNK_SIZE; i++) {
-		int pos_x = x + i;
+		int pos_x = CHUNK_SIZE * chunk_x + i;
 		for (j = 0; j < CHUNK_SIZE; j++) {
-			int pos_y = y + j;
+			int pos_y = CHUNK_SIZE * chunk_y + j;
 			for (k = 0; k < CHUNK_SIZE; k++) {
-				int pos_z = z + k;
+				int pos_z = CHUNK_SIZE * chunk_z + k;
 				if (terrain_generator(pos_x, pos_y, pos_z)) {
 					create_block_data(
 						pos_x,
