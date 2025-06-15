@@ -1,6 +1,6 @@
 #include "chunk.h"
 #include "block.h"
-#include "terrain_gen.h"
+#include "terrain.h"
 #include "util.h"
 
 struct chunk_mesh generate_chunk_mesh(int chunk_x, int chunk_y, int chunk_z) {

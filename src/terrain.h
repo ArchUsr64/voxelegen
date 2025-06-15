@@ -1,5 +1,5 @@
-#ifndef TERRAIN_GEN_H_
-#define TERRAIN_GEN_H_
+#ifndef TERRAIN_H_
+#define TERRAIN_H_
 
 #include <stdbool.h>
 
