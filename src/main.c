@@ -7,7 +7,7 @@
 #include "util.h"
 #include "matrix.h"
 #include "camera.h"
-#include "block.h"
+#include "chunk.h"
 
 #define MOUSE_SENS 1000
 
@@ -85,6 +85,7 @@ int main(void) {
 	GLint vert_in_pos, vert_in_uv;
 	struct ImageRGB atlas_image;
 	Matrix4 projection_matrix, view_matrix;
+	struct chunk_mesh origin_chunk;
 	unsigned int tick = 0;
 	int ret = 0, version;
 	char log_status[512];
@@ -198,12 +199,14 @@ int main(void) {
 		goto exit;
 	}
 
+	origin_chunk = generate_chunk_mesh(0, 0, 0);
+
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(BASE_BLOCK), BASE_BLOCK, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * origin_chunk.vertices.len, origin_chunk.vertices.data, GL_STATIC_DRAW);
 	glVertexAttribPointer(
 		vert_in_pos,
 		3,
@@ -225,8 +228,8 @@ int main(void) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(
 		GL_ELEMENT_ARRAY_BUFFER,
-		sizeof(BASE_BLOCK_INDICES),
-		BASE_BLOCK_INDICES,
+		origin_chunk.indices.len * sizeof(unsigned),
+		origin_chunk.indices.data,
 		GL_STATIC_DRAW);
 
 	if (getenv("DEBUG"))
@@ -301,7 +304,7 @@ int main(void) {
 		glBindVertexArray(vao);
 		glDrawElements(
 			GL_TRIANGLES,
-			sizeof(BASE_BLOCK_INDICES) / sizeof(unsigned int),
+			origin_chunk.indices.len,
 			GL_UNSIGNED_INT,
 			0);
 

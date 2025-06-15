@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "util.h"
+
+CREATE_VEC(int)
+CREATE_VEC(float)
+CREATE_VEC(unsigned)
 
 struct ImageRGB image_from_ppm(char* file_data) {
 	struct ImageRGB ret;
