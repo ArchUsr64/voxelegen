@@ -51,9 +51,9 @@ DECLARE_VEC(vertex)
 */
 
 void create_block_data(
-	int pos_x,
-	int pos_y,
-	int pos_z,
+	int x,
+	int y,
+	int z,
 	unsigned block_index,
 	struct vec_vertex* vertices,
 	struct vec_unsigned* indices);

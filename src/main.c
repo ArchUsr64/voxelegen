@@ -77,7 +77,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-void render_chunk(struct chunk_mesh chunk, GLuint vao, GLuint vbo, GLuint ebo) {
+void render_chunk(struct chunk_mesh chunk, GLuint chunk_pos_uniform, GLuint vao, GLuint vbo, GLuint ebo) {
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(
@@ -91,6 +91,11 @@ void render_chunk(struct chunk_mesh chunk, GLuint vao, GLuint vbo, GLuint ebo) {
 		chunk.indices.len * sizeof(unsigned),
 		chunk.indices.data,
 		GL_DYNAMIC_DRAW);
+	glUniform3f(
+		chunk_pos_uniform,
+		chunk.world_position[0],
+		chunk.world_position[1],
+		chunk.world_position[2]);
 	glDrawElements(GL_TRIANGLES, chunk.indices.len, GL_UNSIGNED_INT, 0);
 }
 
@@ -98,7 +103,7 @@ int main(void) {
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
 	GLuint vbo, ebo, vao, vsh, fsh, shader_program, atlas_texture,
 		projection_matrix_uniform, view_matrix_uniform,
-		tick_uniform;
+		tick_uniform, chunk_pos_uniform;
 	GLint vert_in_pos, vert_in_uv;
 	struct ImageRGB atlas_image;
 	Matrix4 projection_matrix, view_matrix;
@@ -202,6 +207,8 @@ int main(void) {
 		glGetUniformLocation(shader_program, "projection_matrix");
 	view_matrix_uniform =
 		glGetUniformLocation(shader_program, "view_matrix");
+	chunk_pos_uniform =
+		glGetUniformLocation(shader_program, "chunk_pos");
 	tick_uniform = glGetUniformLocation(shader_program, "tick");
 	vert_in_pos = glGetAttribLocation(shader_program, "in_pos");
 	if (vert_in_pos < 0) {
@@ -312,7 +319,7 @@ int main(void) {
 		glUniform1ui(tick_uniform, tick);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, atlas_texture);
-		render_chunk(origin_chunk, vao, vbo, ebo);
+		render_chunk(origin_chunk, chunk_pos_uniform, vao, vbo, ebo);
 
 		glfwSwapBuffers(window);
 		tick++;

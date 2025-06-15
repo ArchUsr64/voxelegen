@@ -3,6 +3,7 @@
 in vec3 in_pos;
 in vec2 in_uv;
 
+uniform vec3 chunk_pos;
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform uint tick;
@@ -14,9 +15,9 @@ void main() {
 	vec3 rotated_pos;
 	mat4 translation_matrix;
 
-	translation_matrix[0] = vec4(1.0, 0.0, 0.0, 0.0);
-	translation_matrix[1] = vec4(0.0, 1.0, 0.0, sin(float(tick) / 100));
-	translation_matrix[2] = vec4(0.0, 0.0, 1.0, 0.0);
+	translation_matrix[0] = vec4(1.0, 0.0, 0.0, chunk_pos.x);
+	translation_matrix[1] = vec4(0.0, 1.0, 0.0, chunk_pos.y);
+	translation_matrix[2] = vec4(0.0, 0.0, 1.0, chunk_pos.z);
 	translation_matrix[3] = vec4(0.0, 0.0, 0.0, 1.0);
 
 	uv = in_uv;

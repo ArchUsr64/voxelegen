@@ -63,18 +63,18 @@ const unsigned BASE_BLOCK_INDICES[] = {
 // clang-format off
 
 void create_block_data(
-	int pos_x,
-	int pos_y,
-	int pos_z,
+	int x,
+	int y,
+	int z,
 	unsigned block_index,
 	struct vec_vertex* vertices,
 	struct vec_unsigned* indices) {
 	unsigned block_index_offset = 24 * block_index, i;
 	for (i = 0; i < sizeof(BASE_BLOCK) / sizeof(vertex); i++) {
 		vertex new_vert = BASE_BLOCK[i];
-		new_vert.position[0] += pos_x;
-		new_vert.position[1] += pos_y;
-		new_vert.position[2] += pos_z;
+		new_vert.position[0] += x;
+		new_vert.position[1] += y;
+		new_vert.position[2] += z;
 		vec_vertex_push(vertices, new_vert);
 	}
 	for (i = 0; i < sizeof(BASE_BLOCK_INDICES) / sizeof(unsigned); i++) {
