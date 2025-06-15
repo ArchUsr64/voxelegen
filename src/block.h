@@ -1,6 +1,8 @@
 #ifndef BLOCK_H_
 #define BLOCK_H_
 
+#include <stdbool.h>
+
 #include "util.h"
 
 /*
@@ -55,6 +57,19 @@ void create_block_data(
 	int y,
 	int z,
 	unsigned block_index,
+	struct vec_vertex* vertices,
+	struct vec_unsigned* indices);
+
+void create_block_data_by_parts(
+	int x,
+	int y,
+	int z,
+	bool pos_x,
+	bool neg_x,
+	bool pos_y,
+	bool neg_y,
+	bool pos_z,
+	bool neg_z,
 	struct vec_vertex* vertices,
 	struct vec_unsigned* indices);
 
