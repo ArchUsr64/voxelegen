@@ -77,6 +77,23 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
+void render_chunk(struct chunk_mesh chunk, GLuint vao, GLuint vbo, GLuint ebo) {
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(
+		GL_ARRAY_BUFFER,
+		sizeof(vertex) * chunk.vertices.len,
+		chunk.vertices.data,
+		GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER,
+		chunk.indices.len * sizeof(unsigned),
+		chunk.indices.data,
+		GL_DYNAMIC_DRAW);
+	glDrawElements(GL_TRIANGLES, chunk.indices.len, GL_UNSIGNED_INT, 0);
+}
+
 int main(void) {
 	char *vert_shader = NULL, *frag_shader = NULL, *atlas_file = NULL;
 	GLuint vbo, ebo, vao, vsh, fsh, shader_program, atlas_texture,
@@ -206,7 +223,6 @@ int main(void) {
 
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * origin_chunk.vertices.len, origin_chunk.vertices.data, GL_STATIC_DRAW);
 	glVertexAttribPointer(
 		vert_in_pos,
 		3,
@@ -226,11 +242,6 @@ int main(void) {
 
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(
-		GL_ELEMENT_ARRAY_BUFFER,
-		origin_chunk.indices.len * sizeof(unsigned),
-		origin_chunk.indices.data,
-		GL_STATIC_DRAW);
 
 	if (getenv("DEBUG"))
 		atlas_file = read_file(ATLAS_PPM_DBG);
@@ -301,12 +312,7 @@ int main(void) {
 		glUniform1ui(tick_uniform, tick);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, atlas_texture);
-		glBindVertexArray(vao);
-		glDrawElements(
-			GL_TRIANGLES,
-			origin_chunk.indices.len,
-			GL_UNSIGNED_INT,
-			0);
+		render_chunk(origin_chunk, vao, vbo, ebo);
 
 		glfwSwapBuffers(window);
 		tick++;
